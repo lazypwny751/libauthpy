@@ -8,20 +8,82 @@ class Auth:
 		self.database	= database
 		self.__initdb()
 
-	def isAuthenticated(self, uid):
-		return None
-	
-	def inQueue(self, uid):
-		return None
+	# Is the user has registered before to auth table?
+	def inAuthentication(self, uid):
+		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall():
+			return True
+		else:
+			return False
 
+	# Is the user allowed?
+	def isAuthenticated(self, uid):
+		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall() and not self.cursor.execute(self.authBanQuery, (uid,)).fetchall()[0][0] == 1:
+			return True
+		else:
+			False
+	
+	def dropAuth(self, uid):
+		None # deauthenticate the user.
+
+	# Authenticate the user.
+	def authenticate(self, uid, authlvl=True):
+		if not isinstance(authlvl, bool):
+			# Fatal error, the authentication level parameter (authlvl) can be bool.
+			raise ValueError(f"\"authlvl\" can not be {authlvl}, can be \"boolean\" (True or False) ")
+
+		# Variable translation for insert the data to database
+		if authlvl:
+			# True
+			realauthlvl = 0
+		else:
+			# False
+			realauthlvl = 1
+	
+		if not self.cursor.execute(self.authQuery, (uid,)).fetchall():
+			try:
+				self.cursor.execute(self.authInsert, (uid, realauthlvl))
+				self.conn.commit()
+			except sqlite3.Error as err:
+				print(f"Error occured while inserting \"{uid}\" and \"{authlvl}\" to table \"auth\": ", err)
+				return(False)
+			finally:
+				return True
+		else:
+			return True
+
+	# return: bool, true is (yes it's in) and false (no it's not in).
+	def inQueue(self, uid):
+		if self.cursor.execute(self.queueQuery, (uid,)).fetchall():
+			# yes it's in queue
+			return True
+		else:
+			# nope
+			return False
+
+	# return: bool, true (inserted or already inserted data), false (fatal error).
 	def register(self, uid):
-		return None
+		if not self.cursor.execute(self.queueQuery, (uid,)).fetchall():
+			try:
+				self.cursor.execute(self.queueInsert, (uid,))
+				self.conn.commit()
+			except sqlite3.Error as err:
+				# Fatal
+				print(f"Error occured while inserting \"{uid}\" to table \"queue\": ", err)
+				return(False)
+			finally:
+				return True
+		else:
+			# Already registered.
+			return True
+	
+	def dropRegister(self, uid):
+		None # deregister the user
 
 	def __initdb(self):
 		# Database options,
 		# int auth table we have user id and authentication level,
 		# so the user id must be an string but why it's not integer?
-		# because the user can be give an string yea, and the auth level
+		# because the admin/user can be give an string yea, and the auth level
 		# must be boolean, 0: authenticated, 1: banned.
 		self.auth = """
 			CREATE TABLE IF NOT EXISTS auth (
@@ -40,15 +102,33 @@ class Auth:
 			);
 		"""
 
+		# user id is in Queue?.
+		self.queueQuery = "SELECT * FROM queue WHERE uid = ?"
+
+		# Insert into user id to queue for registration. 
+		self.queueInsert = "INSERT INTO queue (uid) VALUES (?)"
+
+		# Check if user is there or not for authentication table. 
+		self.authQuery = "SELECT * FROM auth WHERE uid = ?"
+
+		# is the member has banned or not?
+		self.authBanQuery = "SELECT authlvl FROM auth WHERE uid = ?"
+
+		# Insert into user and authentication level to table.
+		self.authInsert = "INSERT INTO auth (uid, authlvl) VALUES (?, ?)"
+
+
 		try:
 			self.conn = sqlite3.connect(self.database)
 		except sqlite3.Error as err:
 			print("Error occured while initilaizing the database: ", err)
-		
+			return(False)
+
 		try:
 			self.cursor = self.conn.cursor()
 		except sqlite3.Error as err:
 			print("Error occured while creating tables: ", err)
+			return(False)
 		finally:
 			self.cursor.execute(self.auth)
 			self.cursor.execute(self.queue)
