@@ -90,7 +90,7 @@ auth.dropAuthentication("my user") # > bool
 import libauth
 auth = libauth.Auth("mydatabase.db")
 
-user = "orange cat"
+user = "my user"
 
 auth.register(user)
 
