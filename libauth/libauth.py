@@ -2,6 +2,7 @@
 
 import os
 import sqlite3
+from sqlite3 import Error
 
 class Auth:
 	def __init__(self, database):
@@ -22,8 +23,18 @@ class Auth:
 		else:
 			False
 	
-	def dropAuth(self, uid):
-		None # deauthenticate the user.
+	def dropAuthentication(self, uid):
+		if self.inAuthentication(uid):
+			try:
+				self.cursor.execute(self.authDelete, (self.cursor.execute(self.authId, (uid,)).fetchall()[0][0],))
+				self.conn.commit()
+			except sqlite3.Error as err:
+				raise ValueError("Could not drop data from auth: ", err)
+				return False
+			finally:
+				return True
+		else:
+			return True
 
 	# Authenticate the user.
 	def authenticate(self, uid, authlvl=True):
@@ -77,7 +88,17 @@ class Auth:
 			return True
 	
 	def dropRegister(self, uid):
-		None # deregister the user
+		if self.inQueue(uid):
+			try:
+				self.cursor.execute(self.queueDelete, (self.cursor.execute(self.queueId, (uid,)).fetchall()[0][0],))
+				self.conn.commit()
+			except sqlite3.Error as err:
+				raise ValueError("Could not drop data from queue: ", err)
+				return False
+			finally:
+				return True
+		else:
+			return True
 
 	def __initdb(self):
 		# Database options,
@@ -108,6 +129,12 @@ class Auth:
 		# Insert into user id to queue for registration. 
 		self.queueInsert = "INSERT INTO queue (uid) VALUES (?)"
 
+		# Get real data id of queue element.
+		self.queueId = "SELECT id FROM queue WHERE uid = ?"
+
+		# Delete queue data by real id.
+		self.queueDelete = "DELETE FROM queue WHERE id = ?"
+
 		# Check if user is there or not for authentication table. 
 		self.authQuery = "SELECT * FROM auth WHERE uid = ?"
 
@@ -117,6 +144,11 @@ class Auth:
 		# Insert into user and authentication level to table.
 		self.authInsert = "INSERT INTO auth (uid, authlvl) VALUES (?, ?)"
 
+		# Get real data id of auth element.
+		self.authId = "SELECT id FROM auth WHERE uid = ?"
+
+		# Delete auth data by real id.
+		self.authDelete = "DELETE FROM auth WHERE id = ?"
 
 		try:
 			self.conn = sqlite3.connect(self.database)
