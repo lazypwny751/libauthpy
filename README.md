@@ -1,6 +1,8 @@
 # libauthpy
 simple authentication library written in python3.
 
+![test](https://github.com/lazypwny751/libauthpy/assets/54551308/06c42f53-8da2-4f5f-b7ba-1b781b85c40a)
+
 ## Installation
 
 ### Using pip3
