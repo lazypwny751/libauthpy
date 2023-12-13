@@ -21,7 +21,8 @@ class Auth:
 		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall() and not self.cursor.execute(self.authBanQuery, (uid,)).fetchall()[0][0] == 1:
 			return True
 		else:
-			False
+			self.conn.close()
+			return False
 	
 	def dropAuthentication(self, uid):
 		if self.inAuthentication(uid):
@@ -151,7 +152,7 @@ class Auth:
 		self.authDelete = "DELETE FROM auth WHERE id = ?"
 
 		try:
-			self.conn = sqlite3.connect(self.database)
+			self.conn = sqlite3.connect(self.database, check_same_thread=False)
 		except sqlite3.Error as err:
 			print("Error occured while initilaizing the database: ", err)
 			return(False)
