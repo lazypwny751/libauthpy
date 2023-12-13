@@ -21,7 +21,6 @@ class Auth:
 		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall() and not self.cursor.execute(self.authBanQuery, (uid,)).fetchall()[0][0] == 1:
 			return True
 		else:
-			self.conn.close()
 			return False
 	
 	def dropAuthentication(self, uid):
@@ -87,6 +86,9 @@ class Auth:
 		else:
 			# Already registered.
 			return True
+	
+	def listRegister(self):
+		self.cursor.execute("SELECT * FROM queue").fetchall()
 	
 	def dropRegister(self, uid):
 		if self.inQueue(uid):
