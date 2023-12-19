@@ -38,6 +38,15 @@ auth = libauth.Auth("mydatabase.db")
 auth.inQueue("my user") # > bool
 ```
 
+### listRegister
+this function return's index of register table, it gives an array.
+```py
+import libauth
+auth = libauth.Auth("mydatabase.db")
+
+auth.listRegister() # > array
+```
+
 ### dropRegister
 after authentcation you delete the user from register table.
 ```py
@@ -55,6 +64,15 @@ import libauth
 auth = libauth.Auth("mydatabase.db")
 
 auth.authenticate("my user", authlvl=True) # > bool
+```
+
+### listAuthentication
+this function will be return's index of authentication table content, it gives an array.
+```py
+import libauth
+auth = libauth.Auth("mydatabase.db")
+
+auth.listAuthentication() # > array
 ```
 
 ### inAuthentication
@@ -84,6 +102,8 @@ auth = libauth.Auth("mydatabase.db")
 
 auth.dropAuthentication("my user") # > bool
 ```
+
+
 
 ## Example
 ```py

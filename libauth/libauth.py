@@ -9,33 +9,6 @@ class Auth:
 		self.database	= database
 		self.__initdb()
 
-	# Is the user has registered before to auth table?
-	def inAuthentication(self, uid):
-		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall():
-			return True
-		else:
-			return False
-
-	# Is the user allowed?
-	def isAuthenticated(self, uid):
-		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall() and not self.cursor.execute(self.authBanQuery, (uid,)).fetchall()[0][0] == 1:
-			return True
-		else:
-			return False
-	
-	def dropAuthentication(self, uid):
-		if self.inAuthentication(uid):
-			try:
-				self.cursor.execute(self.authDelete, (self.cursor.execute(self.authId, (uid,)).fetchall()[0][0],))
-				self.conn.commit()
-			except sqlite3.Error as err:
-				raise ValueError("Could not drop data from auth: ", err)
-				return False
-			finally:
-				return True
-		else:
-			return True
-
 	# Authenticate the user.
 	def authenticate(self, uid, authlvl=True):
 		if not isinstance(authlvl, bool):
@@ -62,14 +35,36 @@ class Auth:
 		else:
 			return True
 
-	# return: bool, true is (yes it's in) and false (no it's not in).
-	def inQueue(self, uid):
-		if self.cursor.execute(self.queueQuery, (uid,)).fetchall():
-			# yes it's in queue
+	# Is the user has registered before to auth table?
+	def inAuthentication(self, uid):
+		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall():
 			return True
 		else:
-			# nope
 			return False
+
+	# Is the user allowed?
+	def isAuthenticated(self, uid):
+		if self.cursor.execute(self.authBanQuery, (uid,)).fetchall() and not self.cursor.execute(self.authBanQuery, (uid,)).fetchall()[0][0] == 1:
+			return True
+		else:
+			return False
+
+	
+	def listAuthentication(self):
+		return self.cursor.execute(self.listAuthQuery).fetchall()
+
+	def dropAuthentication(self, uid):
+		if self.inAuthentication(uid):
+			try:
+				self.cursor.execute(self.authDelete, (self.cursor.execute(self.authId, (uid,)).fetchall()[0][0],))
+				self.conn.commit()
+			except sqlite3.Error as err:
+				raise ValueError("Could not drop data from auth: ", err)
+				return False
+			finally:
+				return True
+		else:
+			return True
 
 	# return: bool, true (inserted or already inserted data), false (fatal error).
 	def register(self, uid):
@@ -86,10 +81,19 @@ class Auth:
 		else:
 			# Already registered.
 			return True
-	
+
+	# return: bool, true is (yes it's in) and false (no it's not in).
+	def inQueue(self, uid):
+		if self.cursor.execute(self.queueQuery, (uid,)).fetchall():
+			# yes it's in queue
+			return True
+		else:
+			# nope
+			return False
+
 	def listRegister(self):
-		self.cursor.execute("SELECT * FROM queue").fetchall()
-	
+		return self.cursor.execute(self.listRegisterQuery).fetchall()
+
 	def dropRegister(self, uid):
 		if self.inQueue(uid):
 			try:
@@ -135,11 +139,14 @@ class Auth:
 		# Get real data id of queue element.
 		self.queueId = "SELECT id FROM queue WHERE uid = ?"
 
-		# Delete queue data by real id.
-		self.queueDelete = "DELETE FROM queue WHERE id = ?"
-
 		# Check if user is there or not for authentication table. 
 		self.authQuery = "SELECT * FROM auth WHERE uid = ?"
+
+		# List all content of queue.
+		self.listRegisterQuery = "SELECT * FROM queue"
+
+		# Delete queue data by real id.
+		self.queueDelete = "DELETE FROM queue WHERE id = ?"
 
 		# is the member has banned or not?
 		self.authBanQuery = "SELECT authlvl FROM auth WHERE uid = ?"
@@ -150,13 +157,16 @@ class Auth:
 		# Get real data id of auth element.
 		self.authId = "SELECT id FROM auth WHERE uid = ?"
 
+		# List all content of auth.
+		self.listAuthQuery = "SELECT * FROM auth"
+
 		# Delete auth data by real id.
 		self.authDelete = "DELETE FROM auth WHERE id = ?"
 
 		try:
 			self.conn = sqlite3.connect(self.database, check_same_thread=False)
 		except sqlite3.Error as err:
-			print("Error occured while initilaizing the database: ", err)
+			raise ValueError("Error occured while initilaizing the database!")
 			return(False)
 
 		try:
