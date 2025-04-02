@@ -85,6 +85,8 @@ class Options:
 			Shell(sub, option).select()
 		elif opt == "show":
 			Shell(sub).show()
+		elif opt == "list":
+			Shell(sub).list()
 		elif opt == "exit":
 			self.__exit()
 
